@@ -95,52 +95,80 @@ begin
   end process next_proc;
 
   -- control 
-  assign_proc : process (clk, rst)
+  -- reg A
+  A_proc : process (clk, rst)
   begin
-    if rst = '0' then
+    if (rst = '0') then
+      regA <= (others => '0');
+    elsif rising_edge(clk) then
+      if (doneMult = '1') then
+        case current_state is
+          when st1 => regA <= outMult;
+          when st3 => regA <= outSqr;
+          when st5 => regA <= regA xor regC;
+          when others => regA <= (others => 'Z');
+        end case;
+      end if;
+    end if;
+  end process A_proc;
+
+  -- reg B
+  B_proc : process (clk, rst)
+  begin
+    if (rst = '0') then
+      regB <= (others => '0');
+    elsif rising_edge(clk) then
+      if (doneMult = '1') then
+        case current_state is
+          when st1 => regB <= outSqr;
+          when st3 => regB <= outMult;
+          when st5 => regB <= regB xor regC;
+          when others => regB <= (others => 'Z');
+        end case;
+      end if;
+    end if;
+  end process B_proc;
+
+  -- reg C
+  C_proc : process (clk, rst)
+  begin
+    if (rst = '0') then
+      regC <= (others => '0');
+    elsif rising_edge(clk) then
+      if (doneMult = '1') then
+        case current_state is
+          when st6 => regC <= outSqr;
+          when others => regC <= outMult;
+        end case;
+      end if;
+    end if;
+  end process C_proc;
+
+  -- reg D
+  D_proc : process (clk, rst)
+  begin
+    if (rst = '0') then
+      regD <= (others => '0');
+    elsif rising_edge(clk) then
+      if (doneMult = '1') then
+        case current_state is
+          when st6 => regD <= outSqr xor outMult;
+          when others => regD <= outSqr;
+        end case;
+      end if;
+    end if;
+  end process D_proc;
+
+  -- control 
+  control_unit : process(clk, rst)
+  begin
+    if (rst = '0') then
       done          <= '0';
       wA            <= (others => '0');
       zA            <= (others => '0');
       wD            <= (others => '0');
       zD            <= (others => '0');
-      regA          <= (others => '0');
-      regB          <= (others => '0');
-      regC          <= (others => '0');
-      regD          <= (others => '0');
     elsif rising_edge(clk) then
-      if (doneMult = '1') then
-        if (current_state = st1) then
-          regA <= outMult;
-          regB <= outSqr;
-        end if;
-
-        if (current_state = st2) then
-          regC <= outMult;
-          regD <= outSqr;
-        end if;
-
-        if (current_state = st3) then
-          regB <= outMult;
-          regA <= outSqr;
-        end if;
-
-        if (current_state = st4) then
-          regD <= outSqr;
-          regC <= outMult;
-        end if;
-
-        if (current_state = st5) then
-          regA <= regA xor regC;
-          regB <= regB xor regC;
-          regC <= outMult;
-        end if;
-
-        if (current_state = st6) then
-          regD <= outSqr xor outMult;
-          regC <= outSqr;
-        end if;
-      end if;
-
       if (done_tmp = '1') then
         wD   <= regC;
         zD   <= regD;
@@ -151,7 +179,7 @@ begin
         done <= '0';
       end if;
     end if;
-  end process assign_proc;
+  end process control_unit;
 
   -- next state logic
   fsm_proc : process(current_state, enable, doneMult, doneSqr)
